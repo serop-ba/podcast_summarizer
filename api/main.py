@@ -11,82 +11,37 @@ global_text = None
 
 app = FastAPI()
 
-pull_model('llama3', service_name='ollama')
 
 class StringRequest(BaseModel):
     text: str
 
-def read_docx(file: BytesIO) -> str:
-    doc = Document(file)
-    text = []
-    for para in doc.paragraphs:
-        text.append(para.text)
-    return '\n'.join(text)
+class SumRequest(BaseModel):
+    data: str
+    model: str
 
-def chunk_string(input_string: str, chunk_length: int, overlap: int):
-    chunks = []
-    start = 0
-    while start < len(input_string):
-        end = start + chunk_length
-        chunks.append(input_string[start:end])
-        start = end - overlap  # Overlap the chunks
-    return chunks
 
-@app.post("/upload/")
-async def upload_file(file: UploadFile = File(...)):
-    file_content = await file.read()
-    global_text = read_docx(BytesIO(file_content))
-    return JSONResponse(content={"text": global_text})
+
+@app.post('/pull_model')
+async def upload_file(model: StringRequest):
+    try:
+
+        pull_model(model.text, service_name='ollama')
+        return {'message':'Model Downloaded successfully'}
+    except Exception as e: 
+        return {'message': f"failed due to {e.with_traceback()}"}
+
+
 
 @app.post("/get_summary/")
-async def create_summary(data:StringRequest):
-    chunks = chunk_string(data.text, 5000, 50)
+async def create_summary(request: SumRequest):
 
-
-    extraction_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are an expert at identifying important keynotes in a podcast conversation. "
-                "Only extract important and relevant key notes that might be interesting for business people and aspiring data scientists. Extract nothing if no important information can be found in the text.",
-            ),
-            ("human", "{text}"),
-        ]
-    )
 
     llm = Ollama(
-        model='llama3',
+        model=request.model,
         base_url="http://ollama:11434/",
         # other params...
     )
-    print("***** podcast summary ******\n")
-
-    extractor = extraction_prompt | llm
-
-    key_points = extractor.batch(
-        [{"text": data} for data in chunks],
-        {"max_concurrency": 1},  # limit the concurrency by passing max concurrency!
-    )
-    for point in key_points:
-        print(point)
-
-
-
-    # Summarize 
-    prompt_template = """Write a concise summary of the following, focus on important key notes that are interesting for business people and data scientists trying to implement ai applications in their work:
-    "{text}"
-    CONCISE SUMMARY:"""
-    summary_prompt = PromptTemplate.from_template(prompt_template)
-
-    joined_string = "\n".join(key_points)
-    chunks = chunk_string(joined_string, 5000, 50)
-
-    extractor = summary_prompt | llm
-    summary = extractor.batch(
-        [{"text": data} for data in chunks],
-        {"max_concurrency": 1},  # limit the concurrency by passing max concurrency!
-    )
-
+   
  
     linkedin_template =ChatPromptTemplate.from_messages(
         [
@@ -100,66 +55,14 @@ async def create_summary(data:StringRequest):
     )
 
     print("\n\n******linkedIn Post*********\n")
-    final_summary = "\n".join(summary)
 
     extractor = linkedin_template | llm
     linkedin_post = extractor.batch(
-        [{"text": final_summary}],
+        [{"text": request.data}],
         {"max_concurrency": 1},  # limit the concurrency by passing max concurrency!
     )[0]
     return JSONResponse(content={"text": linkedin_post})
 
-
-
-
-
-
-
-# # Define the LangChain LLM
-# llm = Ollama(
-#     base_url="http://ollama:11434/",
-#     model='llama3'
-#     # other params...
-# )
-# prompt = hub.pull("rlm/rag-prompt")
-
-# qdrant = QdrantVectorStore.from_existing_collection(collection_name="podcast2", embedding=OllamaEmbeddings( base_url="http://ollama:11434/", model='llama3'), path="./local_qdrant_podcast" )
-# retriever = qdrant.as_retriever()
-
-# class ChatRequest(BaseModel):
-#     message: str
-
-# class ChatResponse(BaseModel):
-#     response: str
-
-# @app.get("/hello")
-# def hello_world():
-#     return {"message": "Hello, world!"}
-
-# @app.post("/chat", response_model=ChatResponse)
-# async def chat(request: ChatRequest):
-#     def format_docs(docs):
-#         return "\n\n".join(doc.page_content for doc in docs)
-#     user_message = request.message
-#     logging.info(user_message)
-
-#     rag_chain = (
-#     {"context": retriever | format_docs, "question": RunnablePassthrough()}
-#     | prompt
-#     | llm
-#     | StrOutputParser()
-#     )
-#     # Process user message with LangChain and ChatGPT
-#     chatgpt_response = rag_chain.invoke({"query": user_message})
-
-#     linkedin_prompt = f"From the following keypoints: {chatgpt_response}, create a linkedIn post about a new podcast episode of Data Tales, add a place for the link, make it short and engaging "
-#     linkedin_chain = (
-#         linkedin_prompt|
-#         llm |
-#         StrOutputParser()
-#     )
-#     linkedin_post = linkedin_chain.invoke()
-#     return ChatResponse(response=linkedin_post)
 
 def format_jobs(jobs):
     formatted = "Here are some job listings:\n"
