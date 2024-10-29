@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 def send_file_to_backend(file):
-    url = "http://fastapi:8000/upload/"
+    url = "http://fastapi:8000/upload/" 
     response = requests.post(url, files={"file": file})
     return response.json()
 

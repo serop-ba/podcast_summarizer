@@ -9,3 +9,4 @@ langchain_community
 langchain_qdrant
 langchainhub
 python-docx
+python-multipart

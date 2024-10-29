@@ -67,11 +67,13 @@ async def create_summary(data:StringRequest):
         [{"text": data} for data in chunks],
         {"max_concurrency": 1},  # limit the concurrency by passing max concurrency!
     )
-    print(key_points)
+    for point in key_points:
+        print(point)
+
 
 
     # Summarize 
-    prompt_template = """Write a concise summary of the following:
+    prompt_template = """Write a concise summary of the following, focus on important key notes that are interesting for business people and data scientists trying to implement ai applications in their work:
     "{text}"
     CONCISE SUMMARY:"""
     summary_prompt = PromptTemplate.from_template(prompt_template)
@@ -90,7 +92,7 @@ async def create_summary(data:StringRequest):
         [
             (
                 "system",
-                "Using the following podcast summary, create an engaging linkedin post announcing the publish of a new podcast episode of Data Tales. Give the episode a title from the mentioned summary and add the main key takeaway points to the post as bullet points.\n" 
+                "Using the following podcast summary, create an engaging linkedin post announcing the publish of a new podcast episode of Data Tales. Give the episode a title from the mentioned summary and add the most important key takeaway points to the post as bullet points. The takeaway should be interesting for business people and data scientists, trying to use AI in their daily work\n" 
     "don't mention the names of the people who stated the information\n "
             ),
             ("ai", "{text}"),
