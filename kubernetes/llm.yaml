@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: server-deployment
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: server
@@ -16,35 +16,37 @@ spec:
         - key: "llm"
           operator: "Equal"
           value: "true"
-          effect: "NoSchedule"  # This matches the taint on the llm-pool nodes
-      initContainers:  # Init container to pull models before the main container starts
-        - name: pull-models
-          image: europe-west1-docker.pkg.dev/secure-project-tutorial/dasc-docker/ollama:latest
-          command:
-            - /bin/sh
-            - "-c"
-            - |
-              echo "Pulling models llama3.2 and llama3.2:1b..."
-              ollama pull llama3.2 && ollama pull llama3.2:1b
-          resources:
-            requests:
-              cpu: "500m"
-              memory: "256Mi"
-            limits:
-              cpu: "1000m"
-              memory: "512Mi"
+          effect: "NoSchedule"
+      volumes:
+        - name: ollama-storage
+          emptyDir: {}
       containers:
       - name: server
         image: europe-west1-docker.pkg.dev/secure-project-tutorial/dasc-docker/ollama:latest
+        command: ["ollama"]
+        args: ["serve"]
         ports:
         - containerPort: 11434
+        volumeMounts:
+          - name: ollama-storage
+            mountPath: /root/.ollama
         resources:
           requests:
-            cpu: "500m"  # Minimum CPU request
-            memory: "256Mi"  # Minimum memory request
+            cpu: "1000m"  # Increased CPU request
+            memory: "4Gi"  # Increased memory request
           limits:
-            cpu: "1000m"  # Maximum CPU limit
-            memory: "512Mi"  # Maximum memory limit
+            cpu: "2000m"  # Increased CPU limit
+            memory: "8Gi"  # Increased memory limit
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - "/bin/sh"
+                - "-c"
+                - |
+                  sleep 10  # Wait for ollama server to start
+                  ollama pull llama3.2
+                  ollama pull llama3.2:1b
 ---
 apiVersion: v1
 kind: Service
