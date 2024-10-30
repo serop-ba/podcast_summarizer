@@ -5,7 +5,7 @@ FROM ollama/ollama
 EXPOSE 11434
 
 # Preload models (add each model you want to preload here)
-RUN ollama pull llama3.2 \
-    && ollama pull llama3.2:1b \
+# RUN ollama pull llama3.2 \
+#     && ollama pull llama3.2:1b \
 # Entrypoint to start the Ollama server
 ENTRYPOINT ["ollama", "serve", "--port", "11434"]
