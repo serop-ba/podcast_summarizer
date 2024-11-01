@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+        sidecar.istio.io/inject: "true"
+    spec:
+      tolerations:
+        - key: "llm"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      volumes:
+        - name: ollama-storage
+          emptyDir: {}
+      containers:
+      - name: server
+        image: europe-west1-docker.pkg.dev/secure-project-tutorial/dasc-docker/ollama:latest
+        command: ["ollama"]
+        args: ["serve"]
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+          - name: ollama-storage
+            mountPath: /root/.ollama
+        resources:
+          requests:
+            cpu: "500m"  # Increased CPU request
+            memory: "4Gi"  # Increased memory request
+          limits:
+            cpu: "2000m"  # Increased CPU limit
+            memory: "8Gi"  # Increased memory limit
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - "/bin/sh"
+                - "-c"
+                - |
+                  sleep 10  # Wait for ollama server to start
+                  ollama pull llama3.2
+                  ollama pull llama3.2:1b
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  type: ClusterIP
+  selector:
+    app: server
+  ports:
+  - protocol: TCP
+    port: 11434
+    targetPort: 11434

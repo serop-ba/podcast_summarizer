@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+      - name: backend
+        image: europe-west1-docker.pkg.dev/secure-project-tutorial/dasc-docker/backend:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: "500m"  # Minimum CPU request
+            memory: "256Mi"  # Minimum memory request
+          limits:
+            cpu: "1000m"  # Maximum CPU limit
+            memory: "512Mi"  # Maximum memory limit
+        env:
+        - name: SERVER_URL
+          value: "http://server-service:11434" # URL for the server service
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
