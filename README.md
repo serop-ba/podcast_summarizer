@@ -1,4 +1,4 @@
-# Podcast Summary Generator
+# Podcast Summary Generator Using Open Source LLMS
 
 ## Overview
 
