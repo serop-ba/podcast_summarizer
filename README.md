@@ -108,21 +108,27 @@ or you can install it from kubernetes file
    kubectl -n istio-system get svc istio-ingressgateway
 ```
 ## Deploy Your Application
+1. **Deploy Images to artifact registry***
+You can run this script after adjusting it to your GCP project. You can run (on mac)
+```
+./build_images.sh
+```
+or run the commands in your terminal. 
 
-1. **Apply the resources from the folder:**
+2. **Apply the resources from the folder:**
 
    Make sure you have your application YAML files ready. You can apply them using:
 ```
    kubectl apply -f ./kubernetes
 ```
 
-
-   ---
+---
 
 ## HTTPs Support
 
 The current setup is configured to support only HTTP traffic. If you require HTTPS support, please ensure to add TLS termination by modifying the Gateway configuration to include TLS settings.
----
+
+
 
 # Testing 
 ## Accessing the Application
