@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: server-deployment
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: server
@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         app: server
+        sidecar.istio.io/inject: "true"
     spec:
       tolerations:
         - key: "llm"
@@ -32,7 +33,7 @@ spec:
             mountPath: /root/.ollama
         resources:
           requests:
-            cpu: "1000m"  # Increased CPU request
+            cpu: "500m"  # Increased CPU request
             memory: "4Gi"  # Increased memory request
           limits:
             cpu: "2000m"  # Increased CPU limit
